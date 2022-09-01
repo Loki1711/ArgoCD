@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: my-first-deployment
-          image: stacksimplify/kubenginx:1.0.0
+          image: stacksimplify/kubenginx:3.0.0
           resources:
             requests:
               cpu: "50m"
