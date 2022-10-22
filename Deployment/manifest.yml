@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: deploy-app
-          image: stacksimplify/kubenginx:2.0.0
+          image: stacksimplify/kubenginx:3.0.0
           resources:
             requests:
               cpu: 100m
