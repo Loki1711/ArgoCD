@@ -8,3 +8,143 @@ data:
     CREATE DATABASE webappdb; 
 ---
 
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata: 
+  name:  managed-premium-retain-sc
+provisioner: disk.csi.azure.com
+parameters:
+  storageaccounttype: Premium_LRS 
+  kind: managed
+reclaimPolicy: Delete
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true  
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azure-managed-disk-pvc
+spec:
+  storageClassName: managed-premium-retain-sc
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+      
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  mysql
+  labels:
+    app:  mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  replicas: 1
+  strategy: 
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app:  mysql
+    spec:
+      containers:
+        - name:  mysql
+          image: mysql:5.6
+          resources:
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: dbpassword11
+          ports:
+            - containerPort:  3306
+              name:  mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql 
+            - name: usermanagement-dbcreation-script
+              mountPath: /docker-entrypoint-initdb.d
+
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: azure-managed-disk-pvc
+        - name: usermanagement-dbcreation-script
+          configMap:
+            name: myconfigmap
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  clusterIP: None
+  ports:
+    - name: mysql
+      port: 3306
+      
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  usermgmt
+spec:
+  selector:
+    matchLabels:
+      app: usermgmt
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app:  usermgmt
+    spec:
+      initContainers:
+        - name: init-db
+          image: busybox:1.31
+          command: ['sh', '-c', 'echo -e "Checking for the availability of MySQL Server deployment"; while ! nc -z mysql 3306; do sleep 1; printf "-"; done; echo -e "  >> MySQL DB Server has started";']  
+      containers:
+        - name:  usermgmt
+          image: stacksimplify/kube-usermgmt-webapp:1.0.0-MySQLDB
+          imagePullPolicy: Always
+          resources:
+          env:
+            - name: DB_HOSTNAME
+              value: "mysql"            
+            - name: DB_PORT
+              value: "3306"            
+            - name: DB_NAME
+              value: "webappdb"            
+            - name: DB_USERNAME
+              value: "root"            
+            - name: DB_PASSWORD
+              value: "dbpassword11"
+          ports:
+            - containerPort:  8080
+              name:  usermgmt
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: usermgmt
+  labels:
+    app:  usermgmt
+spec:
+  selector:
+    app: usermgmt
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 8080
+
