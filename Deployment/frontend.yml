@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-frontend-deployment
+  labels:
+    app: frontendapp
+    tier: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontendapp
+  template:
+    metadata:
+      labels:
+        app: frontendapp
+    spec:
+      containers:
+        - name: my-frontend-deployment
+          image: stacksimplify/kube-frontend-nginx:1.0.0
+          resources:
+          ports:
+            - name: web
+              containerPort:  80
+              protocol: TCP
+          
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-frontend-service
+  labels:
+    app: frontendapp
+    tier: frontend
+spec:
+  selector:
+    app: frontendapp
+  type: LoadBalancer
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 80
