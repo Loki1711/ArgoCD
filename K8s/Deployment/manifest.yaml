@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  deploy
+spec:
+  selector:
+    matchLabels:
+      app: deploy-app
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        app: deploy-app
+    spec:
+      containers:
+        - name: deploy-app
+          image: stacksimplify/kubenginx:2.0.0
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 200m
+              memory: 200Mi
+          ports:
+            - containerPort:  80
+              name:  http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-svc-deploy
+spec:
+  selector:
+    app: deploy-app
+  type: LoadBalancer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
