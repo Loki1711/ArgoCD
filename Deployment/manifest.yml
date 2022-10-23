@@ -4,6 +4,6 @@ metadata:
   name: mysql
 spec:
   type: ExternalName
-  externalName: tcs-sql.mysql.database.azure.com
+  externalName: tcs-test.mysql.database.azure.com
   
 ---
