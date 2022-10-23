@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-file-share-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: MYAPP
+  template:
+    metadata:
+      labels:
+        app: MYAPP
+    spec:
+      containers:
+        - name: azure-file-share-deployment
+          image: stacksimplify/kube-nginxapp1:1.0.0
+          resources:
+          ports:
+            - name: web
+              containerPort:  80
+              protocol: TCP
+          volumeMounts:
+            - name: azure-file-pvc
+              mountPath:  "/usr/share/nginx/html/app1"
+      volumes:
+        - name: azure-file-pvc
+          persistentVolumeClaim:
+            claimName: azure-file-pvc  
+          
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: azure-file-share-service
+spec:
+  selector:
+    app: MYAPP
+  type: LoadBalancer
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 80
