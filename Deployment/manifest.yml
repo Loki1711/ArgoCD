@@ -13,7 +13,7 @@ mountOptions:
   - mfsymlinks
   - cache=strict
  
- ---
+---
  
  apiVersion: apps/v1
 kind: Deployment
